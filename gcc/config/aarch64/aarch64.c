@@ -440,6 +440,17 @@ aarch64_is_long_call_p (rtx sym)
   return aarch64_decl_is_long_call_p (SYMBOL_REF_DECL (sym));
 }
 
+void
+aarch64_function_profiler (FILE *file, int labelno ATTRIBUTE_UNUSED)
+{
+	if (flag_fentry)
+	{
+		fprintf (file, "\tmov\tx9, x30\n");
+		fprintf (file, "\tbl\t__fentry__\n");
+		fprintf (file, "\tmov\tx30, x9\n");
+	}
+}
+
 /* Return true if the offsets to a zero/sign-extract operation
    represent an expression that matches an extend operation.  The
    operands represent the paramters from
@@ -7414,6 +7425,15 @@ aarch64_emit_unlikely_jump (rtx insn)
   add_int_reg_note (insn, REG_BR_PROB, very_unlikely);
 }
 
+/* Return true, if profiling code should be emitted before
+ * prologue. Otherwise it returns false.
+ * Note: For x86 with "hotfix" it is sorried.  */
+static bool
+aarch64_profile_before_prologue (void)
+{
+	return flag_fentry != 0;
+}
+
 /* Expand a compare and swap pattern.  */
 
 void
@@ -8453,6 +8473,9 @@ aarch64_cannot_change_mode_class (enum machine_mode from,
 
 #undef TARGET_ASM_ALIGNED_SI_OP
 #define TARGET_ASM_ALIGNED_SI_OP "\t.word\t"
+
+#undef TARGET_PROFILE_BEFORE_PROLOGUE
+#define TARGET_PROFILE_BEFORE_PROLOGUE aarch64_profile_before_prologue
 
 #undef TARGET_ASM_CAN_OUTPUT_MI_THUNK
 #define TARGET_ASM_CAN_OUTPUT_MI_THUNK \
